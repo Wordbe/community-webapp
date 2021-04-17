@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/springboot
+    url: jdbc:postgresql://localhost:5432/meetme
     username: wordbe
     password: 1234
   jpa:
@@ -16,4 +16,10 @@ spring:
       name: user
       password: 1234
 
-
+logging:
+  level:
+    org:
+      hibernate:
+        type:
+          descriptor:
+            sql: trace
