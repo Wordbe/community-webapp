@@ -2,9 +2,7 @@ package kr.niceto.meetme.domain.accounts;
 
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Getter
 @AllArgsConstructor
@@ -22,4 +20,7 @@ public class Account {
     private String password;
 
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    private AccountRole role;
 }
