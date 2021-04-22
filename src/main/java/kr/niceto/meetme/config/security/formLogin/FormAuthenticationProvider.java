@@ -1,4 +1,4 @@
-package kr.niceto.meetme.config.security;
+package kr.niceto.meetme.config.security.formLogin;
 
 import kr.niceto.meetme.domain.accounts.AccountContext;
 import lombok.RequiredArgsConstructor;

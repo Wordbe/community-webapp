@@ -1,5 +1,6 @@
 package kr.niceto.meetme.config.security;
 
+import kr.niceto.meetme.config.security.formLogin.FormAuthenticationProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
