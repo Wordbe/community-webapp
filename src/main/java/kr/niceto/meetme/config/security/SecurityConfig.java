@@ -1,6 +1,7 @@
 package kr.niceto.meetme.config.security;
 
 import kr.niceto.meetme.config.security.formLogin.FormAuthenticationProvider;
+import kr.niceto.meetme.config.security.oauth2login.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -13,18 +14,23 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final FormAuthenticationProvider formAuthenticationProvider;
+    private final CustomOAuth2UserService customOAuth2UserService;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .authorizeRequests()
-                .antMatchers("/", "/signup").permitAll()
-                .anyRequest().authenticated()
+            .authorizeRequests()
+            .antMatchers("/", "/signup").permitAll()
+            .anyRequest().authenticated()
         .and()
-                .formLogin()
-                .loginPage("/login")
-                .loginProcessingUrl("/login_proc")
-                .permitAll()
+            .formLogin()
+            .loginPage("/login")
+            .loginProcessingUrl("/login_proc")
+            .permitAll()
+        .and()
+            .oauth2Login()
+                .userInfoEndpoint()
+                    .userService(customOAuth2UserService)
         ;
     }
 
