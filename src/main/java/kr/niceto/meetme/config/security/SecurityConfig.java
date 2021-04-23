@@ -29,6 +29,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .permitAll()
         .and()
             .oauth2Login()
+            .loginPage("/login")
+            .loginProcessingUrl("login_proc")
                 .userInfoEndpoint()
                     .userService(customOAuth2UserService)
         ;
