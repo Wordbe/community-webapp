@@ -28,7 +28,7 @@ public class FormAuthenticationProvider implements AuthenticationProvider {
             throw new BadCredentialsException("비밀번호가 틀립니다.");
         }
 
-        return new UsernamePasswordAuthenticationToken(accountContext.getAccount(), null, accountContext.getAuthorities());
+        return new UsernamePasswordAuthenticationToken(accountContext.getAccount(), passwordFromDb, accountContext.getAuthorities());
     }
 
     @Override
