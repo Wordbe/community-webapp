@@ -2,7 +2,7 @@ package kr.niceto.meetme.config.security.oauth2login;
 
 import kr.niceto.meetme.domain.oauthaccount.OAuthAccount;
 import kr.niceto.meetme.domain.oauthaccount.OAuthAccountRepository;
-import kr.niceto.meetme.web.dto.OAuthAttributes;
+import kr.niceto.meetme.web.dto.OAuth2AccountAttributes;
 import kr.niceto.meetme.web.dto.SessionOAuthAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,8 +21,13 @@ import java.util.Collections;
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
     private final OAuthAccountRepository oAuthAccountRepository;
-    private final HttpSession httpSession;
 
+    /**
+     * OAuth2 인증 완료 후 받아온 정보(userRequest)를 DB에 저장하거나 변경한다.
+     * @param userRequest
+     * @return
+     * @throws OAuth2AuthenticationException
+     */
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
@@ -32,20 +37,18 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
                 .getUserInfoEndpoint().getUserNameAttributeName();
 
-        OAuthAttributes attributes = OAuthAttributes.of(registrationId,
+        OAuth2AccountAttributes attributes = OAuth2AccountAttributes.of(registrationId,
                 userNameAttributeName,
                 oAuth2User.getAttributes());
 
         OAuthAccount oAuthAccount = saveOrUpdate(attributes);
-
-        httpSession.setAttribute("oAuthAccount", new SessionOAuthAccount(oAuthAccount));
 
         return new DefaultOAuth2User(Collections.singleton(new SimpleGrantedAuthority(oAuthAccount.getRoleKey())),
                 attributes.getAttributes(),
                 attributes.getNameAttributeKey());
     }
 
-    private OAuthAccount saveOrUpdate(OAuthAttributes attributes) {
+    private OAuthAccount saveOrUpdate(OAuth2AccountAttributes attributes) {
         OAuthAccount oAuthAccount = oAuthAccountRepository.findByEmail(attributes.getEmail())
                 .map(entity -> entity.update(attributes.getName(), attributes.getPicture()))
                 .orElse(attributes.toEntity());

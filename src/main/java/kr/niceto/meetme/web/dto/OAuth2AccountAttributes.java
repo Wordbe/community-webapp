@@ -1,0 +1,71 @@
+package kr.niceto.meetme.web.dto;
+
+import kr.niceto.meetme.domain.accounts.AccountRole;
+import kr.niceto.meetme.domain.oauthaccount.OAuthAccount;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.util.Map;
+
+@Getter
+public class OAuth2AccountAttributes {
+    private Map<String, Object> attributes;
+    private String nameAttributeKey;
+    private String name;
+    private String email;
+    private String provider;
+    private String picture;
+
+    @Builder
+    public OAuth2AccountAttributes(Map<String, Object> attributes, String nameAttributeKey, String name, String email, String provider, String picture) {
+        this.attributes = attributes;
+        this.nameAttributeKey = nameAttributeKey;
+        this.name = name;
+        this.email = email;
+        this.provider = provider;
+        this.picture = picture;
+    }
+
+    public static OAuth2AccountAttributes of(String registrationId,
+                                             String userNameAttributeName,
+                                             Map<String, Object> attributes) {
+        if ("naver".equals(registrationId)) {
+            return ofNaver(registrationId, "id", attributes);
+        }
+        return ofGoogle(registrationId, userNameAttributeName, attributes);
+    }
+
+    private static OAuth2AccountAttributes ofNaver(String registrationId, String userNameAttributeName, Map<String, Object> attributes) {
+        Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+
+        return OAuth2AccountAttributes.builder()
+                .name((String) response.get("name"))
+                .email((String) response.get("email"))
+                .picture((String) response.get("profile_image"))
+                .provider(registrationId)
+                .attributes(response)
+                .nameAttributeKey(userNameAttributeName)
+                .build();
+    }
+
+    private static OAuth2AccountAttributes ofGoogle(String registrationId, String userNameAttributeName, Map<String, Object> attributes) {
+        return OAuth2AccountAttributes.builder()
+                .name((String) attributes.get("name"))
+                .email((String) attributes.get("email"))
+                .provider(registrationId)
+                .picture((String) attributes.get("picture"))
+                .attributes(attributes)
+                .nameAttributeKey(userNameAttributeName)
+                .build();
+    }
+
+    public OAuthAccount toEntity() {
+        return OAuthAccount.builder()
+                .name(name)
+                .email(email)
+                .picture(picture)
+                .provider(provider)
+                .role(AccountRole.USER)
+                .build();
+    }
+}

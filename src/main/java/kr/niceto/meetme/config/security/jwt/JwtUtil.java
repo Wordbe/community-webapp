@@ -9,7 +9,7 @@ import javax.crypto.SecretKey;
 public class JwtUtil {
 
     public static String createToken() {
-        SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.ES256);
+        SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
         return Jwts.builder()
                 .setSubject("Jin")

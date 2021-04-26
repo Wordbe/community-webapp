@@ -22,6 +22,9 @@ public class OAuthAccount extends BaseTimeEntity {
     @Column(nullable = false)
     private String email;
 
+    @Column(nullable = false)
+    private String provider;
+
     @Column
     private String picture;
 
@@ -30,9 +33,10 @@ public class OAuthAccount extends BaseTimeEntity {
     private AccountRole role;
 
     @Builder
-    public OAuthAccount(String name, String email, String picture, AccountRole role) {
+    public OAuthAccount(String name, String email, String provider, String picture, AccountRole role) {
         this.name = name;
         this.email = email;
+        this.provider = provider;
         this.picture = picture;
         this.role = role;
     }
