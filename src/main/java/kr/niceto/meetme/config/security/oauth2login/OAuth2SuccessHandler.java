@@ -47,12 +47,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
 
         SavedRequest savedRequest = requestCache.getRequest(request, response);
-        // 이전 정보없이 로그인 했을 경우
         if (savedRequest != null) {
             String redirectUrl = savedRequest.getRedirectUrl();
             redirectStrategy.sendRedirect(request, response, redirectUrl);
-        } else {
-            redirectStrategy.sendRedirect(request, response, "/");
         }
+        redirectStrategy.sendRedirect(request, response, "/");
     }
 }
