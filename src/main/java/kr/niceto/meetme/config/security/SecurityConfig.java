@@ -1,6 +1,7 @@
 package kr.niceto.meetme.config.security;
 
 import kr.niceto.meetme.config.security.formLogin.FormAuthenticationProvider;
+import kr.niceto.meetme.config.security.formLogin.FormSuccessHandler;
 import kr.niceto.meetme.config.security.oauth2login.CustomOAuth2UserService;
 import kr.niceto.meetme.config.security.oauth2login.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final FormAuthenticationProvider formAuthenticationProvider;
+    private final FormSuccessHandler formSuccessHandler;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
@@ -34,9 +36,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .formLogin()
                 .loginPage("/login")
                 .loginProcessingUrl("/login_proc")
+                .successHandler(formSuccessHandler)
                 .permitAll()
         .and()
             .oauth2Login()
+                .loginPage("/login")
+                .loginProcessingUrl("/login_proc")
                 .userInfoEndpoint()
                     .userService(customOAuth2UserService)
                     .and()

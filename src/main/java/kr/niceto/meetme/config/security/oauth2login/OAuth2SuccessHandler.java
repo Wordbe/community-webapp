@@ -35,7 +35,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         LocalDateTime issuedAt = LocalDateTime.now();
         String jwt = createJwt(authentication, issuedAt);
 
-        setResponse(response, issuedAt, jwt);
+        jwtUtil.setResponse(response, issuedAt, jwt);
         sendRedirect(request, response);
     }
 
@@ -48,18 +48,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .collect(Collectors.toList());
 
         return jwtUtil.createToken(email, roles, issuedAt);
-    }
-
-    private void setResponse(HttpServletResponse response, LocalDateTime issuedAt, String jwt) {
-        Cookie cookie = new Cookie("refreshToken", jwt);
-        cookie.setHttpOnly(true);
-//        cookie.setPath("/");
-//        cookie.setSecure(true); // https
-
-        response.addCookie(cookie);
-        response.setStatus(HttpStatus.OK.value());
-        response.addHeader("X-Access-Token", jwt);
-        response.addHeader("X-Token-Expires-In", String.valueOf(issuedAt.plusMinutes(60)));
     }
 
     private void sendRedirect(HttpServletRequest request, HttpServletResponse response) throws IOException {

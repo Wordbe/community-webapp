@@ -6,9 +6,12 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -40,5 +43,17 @@ public class JwtUtil {
 
     private Date localDateTime2Date(LocalDateTime issuedAt) {
         return Date.from(issuedAt.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    public void setResponse(HttpServletResponse response, LocalDateTime issuedAt, String jwt) {
+        Cookie cookie = new Cookie("refreshToken", jwt);
+        cookie.setHttpOnly(true);
+//        cookie.setPath("/");
+//        cookie.setSecure(true); // https
+
+        response.addCookie(cookie);
+        response.setStatus(HttpStatus.OK.value());
+        response.addHeader("X-Access-Token", jwt);
+        response.addHeader("X-Token-Expires-In", String.valueOf(issuedAt.plusMinutes(TOKEN_VALID_MINUTES)));
     }
 }
