@@ -37,6 +37,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
                 .getUserInfoEndpoint().getUserNameAttributeName();
 
+        // attribute 안에 accessToken 정보를 담아야 함
         OAuth2AccountAttributes attributes = OAuth2AccountAttributes.of(registrationId,
                 userNameAttributeName,
                 oAuth2User.getAttributes());
