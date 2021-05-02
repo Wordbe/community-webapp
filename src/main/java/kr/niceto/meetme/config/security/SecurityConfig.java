@@ -2,6 +2,9 @@ package kr.niceto.meetme.config.security;
 
 import kr.niceto.meetme.config.security.formLogin.FormAuthenticationProvider;
 import kr.niceto.meetme.config.security.formLogin.FormSuccessHandler;
+//import kr.niceto.meetme.config.security.jwt.JwtAuthenticationFilter;
+import kr.niceto.meetme.config.security.jwt.JwtAuthenticationFilter;
+import kr.niceto.meetme.config.security.jwt.JwtUtil;
 import kr.niceto.meetme.config.security.oauth2login.CustomOAuth2UserService;
 import kr.niceto.meetme.config.security.oauth2login.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @RequiredArgsConstructor
 @EnableWebSecurity
@@ -20,6 +24,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final FormSuccessHandler formSuccessHandler;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final JwtUtil jwtUtil;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -28,24 +33,26 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
             .authorizeRequests()
-                .antMatchers("/", "/signup").permitAll()
+                .antMatchers("/", "/login", "/signup").permitAll()
                 .anyRequest().authenticated()
-        .and()
-            .httpBasic()
-                .disable()
-            .formLogin()
-                .loginPage("/login")
-                .loginProcessingUrl("/login_proc")
-                .successHandler(formSuccessHandler)
-                .permitAll()
+//        .and()
+//            .httpBasic()
+//                .disable()
+//            .formLogin()
+//                .loginPage("/login")
+//                .loginProcessingUrl("/login_proc")
+//                .successHandler(formSuccessHandler)
+//                .permitAll()
+//                .and()
+//            .authenticationProvider(formAuthenticationProvider)
         .and()
             .oauth2Login()
-                .loginPage("/login")
-                .loginProcessingUrl("/login_proc")
                 .userInfoEndpoint()
                     .userService(customOAuth2UserService)
                     .and()
                 .successHandler(oAuth2SuccessHandler)
+        .and()
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
         ;
     }
 
@@ -53,10 +60,5 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) {
         // /css/**, /images/**, /js/** 등 정적 리소스는 보안필터를 거치지 않게 한다.
         web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
-    }
-
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) {
-        auth.authenticationProvider(formAuthenticationProvider);
     }
 }

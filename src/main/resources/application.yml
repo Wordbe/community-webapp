@@ -20,6 +20,8 @@ spring:
     include: oauth,security
 
 logging:
+  file:
+    name: /log/test.log
   level:
     org:
       hibernate:
