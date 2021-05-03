@@ -88,6 +88,11 @@ public class JwtUtil {
     }
 
     public boolean isTokenValid(String jwt, HttpServletResponse response) throws IOException {
+        if (StringUtils.isBlank(jwt)) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT does not exist.");
+            return false;
+        }
+
         try {
             Jws<Claims> claimsJws = getClaims(jwt);
             return !StringUtils.isBlank(jwt) && !claimsJws.getBody().getExpiration().before(new Date());
