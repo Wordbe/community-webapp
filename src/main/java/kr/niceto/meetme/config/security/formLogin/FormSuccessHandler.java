@@ -5,7 +5,6 @@ import kr.niceto.meetme.domain.accounts.Account;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -33,7 +32,7 @@ public class FormSuccessHandler implements AuthenticationSuccessHandler {
         LocalDateTime issuedAt = LocalDateTime.now();
         String jwt = createJwt(authentication, issuedAt);
 
-        jwtUtil.setResponse(response, issuedAt, jwt);
+        jwtUtil.setResponseHeader(response, issuedAt, jwt);
         sendRedirect(request, response);
     }
 

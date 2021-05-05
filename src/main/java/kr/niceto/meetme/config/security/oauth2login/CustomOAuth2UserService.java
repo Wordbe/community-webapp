@@ -33,11 +33,13 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
-                .getUserInfoEndpoint().getUserNameAttributeName();
+        String registrationId = userRequest.getClientRegistration()
+                                .getRegistrationId();
+        String userNameAttributeName = userRequest.getClientRegistration()
+                                .getProviderDetails()
+                                .getUserInfoEndpoint()
+                                .getUserNameAttributeName();
 
-        // attribute 안에 accessToken 정보를 담아야 함
         OAuth2AccountAttributes attributes = OAuth2AccountAttributes.of(registrationId,
                 userNameAttributeName,
                 oAuth2User.getAttributes());

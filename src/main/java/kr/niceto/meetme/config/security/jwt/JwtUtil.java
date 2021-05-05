@@ -2,6 +2,7 @@ package kr.niceto.meetme.config.security.jwt;
 
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.crypto.SecretKey;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -20,7 +22,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -39,11 +40,24 @@ public class JwtUtil {
     @Value("${jwt.token-key-name}")
     private String TOKEN_KEY_NAME;
 
-    public String createToken(String username, List<String> roles, LocalDateTime issuedAt) {
-        SecretKey secretKey = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    private SecretKey secretKey;
 
+    @PostConstruct
+    protected void init() {
+        byte[] decodedSecretKey = Decoders.BASE64.decode(SECRET_KEY);
+        this.secretKey = Keys.hmacShaKeyFor(decodedSecretKey);
+    }
+
+    public String createToken(String username, List<String> roles, LocalDateTime issuedAt) {
+        return createToken(username, null, roles, issuedAt);
+    }
+
+    public String createToken(String username, String provider, List<String> roles, LocalDateTime issuedAt) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put("roles", roles);
+        if (!StringUtils.isBlank(provider)) {
+            claims.put("provider", provider);
+        }
 
         return Jwts.builder()
                 .setHeaderParam("typ", Header.JWT_TYPE)
@@ -69,24 +83,6 @@ public class JwtUtil {
         return "";
     }
 
-    public boolean isTokenValid(String jwt) {
-        try {
-            Jws<Claims> claimsJws = getClaims(jwt);
-            return !StringUtils.isBlank(jwt) && !claimsJws.getBody().getExpiration().before(new Date());
-        } catch (SecurityException e) {
-            log.info("Invalid JWT signature.");
-        } catch (MalformedJwtException e) {
-            log.info("Invalid JWT token.");
-        } catch (ExpiredJwtException e) {
-            log.info("Expired JWT token.");
-        } catch (UnsupportedJwtException e) {
-            log.info("Unsupported JWT token.");
-        } catch (IllegalArgumentException e) {
-            log.info("JWT token compact of handler are invalid.");
-        }
-        return false;
-    }
-
     public boolean isTokenValid(String jwt, HttpServletResponse response) throws IOException {
         if (StringUtils.isBlank(jwt)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT does not exist.");
@@ -95,7 +91,7 @@ public class JwtUtil {
 
         try {
             Jws<Claims> claimsJws = getClaims(jwt);
-            return !StringUtils.isBlank(jwt) && !claimsJws.getBody().getExpiration().before(new Date());
+            return !claimsJws.getBody().getExpiration().before(new Date());
         } catch (SecurityException e) {
             log.info("Invalid JWT signature.");
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT signature is invalid.");
@@ -127,14 +123,13 @@ public class JwtUtil {
     }
 
     public Jws<Claims> getClaims(String jwt) {
-        SecretKey secretKey = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(jwt);
     }
 
-    public void setResponse(HttpServletResponse response, LocalDateTime issuedAt, String jwt) {
+    public void setResponseHeader(HttpServletResponse response, LocalDateTime issuedAt, String jwt) {
         Cookie cookie = new Cookie("refreshToken", jwt);
         cookie.setHttpOnly(true);
 //        cookie.setPath("/");

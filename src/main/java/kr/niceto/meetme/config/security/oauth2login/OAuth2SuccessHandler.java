@@ -1,22 +1,19 @@
 package kr.niceto.meetme.config.security.oauth2login;
 
-import com.nimbusds.oauth2.sdk.util.StringUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import kr.niceto.meetme.config.security.jwt.JwtUtil;
+import kr.niceto.meetme.domain.common.CommonResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.web.DefaultRedirectStrategy;
-import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.security.web.savedrequest.RequestCache;
-import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -35,8 +32,25 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         LocalDateTime issuedAt = LocalDateTime.now();
         String jwt = createJwt(authentication, issuedAt);
 
-        jwtUtil.setResponse(response, issuedAt, jwt);
-        sendRedirect(request, response);
+        setResponseHeader(response, issuedAt, jwt);
+        setResponseBody(response);
+    }
+
+    private void setResponseHeader(HttpServletResponse response, LocalDateTime issuedAt, String jwt) {
+        jwtUtil.setResponseHeader(response, issuedAt, jwt);
+    }
+
+    private void setResponseBody(HttpServletResponse response) throws IOException {
+        CommonResponse successResponse = CommonResponse.builder()
+                .status(HttpStatus.OK.value())
+                .code(HttpStatus.OK.name())
+                .message(HttpStatus.OK.getReasonPhrase())
+                .build();
+        ObjectWriter objectWriter = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        String json = objectWriter.writeValueAsString(successResponse);
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().append(json);
     }
 
     private String createJwt(Authentication authentication, LocalDateTime issuedAt) {
@@ -46,20 +60,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         List<String> roles = principal.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
+        String provider = ((OAuth2AuthenticationToken) authentication).getAuthorizedClientRegistrationId();
 
-        return jwtUtil.createToken(email, roles, issuedAt);
-    }
-
-    private void sendRedirect(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        RequestCache requestCache = new HttpSessionRequestCache();
-        RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
-
-        SavedRequest savedRequest = requestCache.getRequest(request, response);
-        if (savedRequest != null) {
-            String redirectUrl = savedRequest.getRedirectUrl();
-            redirectStrategy.sendRedirect(request, response, redirectUrl);
-        } else {
-            redirectStrategy.sendRedirect(request, response, "/");
-        }
+        return jwtUtil.createToken(email, provider, roles, issuedAt);
     }
 }
