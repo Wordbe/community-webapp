@@ -1,4 +1,4 @@
-package kr.niceto.meetme.domain.common;
+package kr.niceto.meetme.config.common;
 
 import lombok.Builder;
 import lombok.Getter;

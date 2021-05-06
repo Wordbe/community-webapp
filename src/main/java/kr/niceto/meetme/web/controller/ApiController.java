@@ -1,6 +1,6 @@
 package kr.niceto.meetme.web.controller;
 
-import kr.niceto.meetme.domain.common.CommonResponse;
+import kr.niceto.meetme.config.common.CommonResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

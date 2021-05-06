@@ -3,7 +3,7 @@ package kr.niceto.meetme.config.security.oauth2login;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import kr.niceto.meetme.config.security.jwt.JwtUtil;
-import kr.niceto.meetme.domain.common.CommonResponse;
+import kr.niceto.meetme.config.common.CommonResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;

@@ -1,6 +1,8 @@
-package kr.niceto.meetme.domain.common;
+package kr.niceto.meetme.config.common;
 
+import kr.niceto.meetme.config.ApplicationContextProvider;
 import lombok.Builder;
+import org.springframework.context.ApplicationContext;
 
 @Builder
 public class CommonException extends RuntimeException {
@@ -19,10 +21,14 @@ public class CommonException extends RuntimeException {
                                          String returnCode,
                                          String messageCode,
                                          Object... messageArgs) {
+        ApplicationContext applicationContext = ApplicationContextProvider.getApplicationContext();
+        CommonMessageSource messageSource = applicationContext.getBean(CommonMessageSource.class);
+        String message = messageSource.getMessage(messageCode, messageArgs);
+
         return CommonException.builder()
                 .returnCode(returnCode)
                 .messageCode(messageCode)
-                .message("")
+                .message(message)
                 .cause(cause)
                 .build();
     }
