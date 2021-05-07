@@ -3,6 +3,7 @@ package kr.niceto.meetme.config.security;
 import kr.niceto.meetme.config.security.formLogin.FormAuthenticationProvider;
 import kr.niceto.meetme.config.security.formLogin.FormSuccessHandler;
 //import kr.niceto.meetme.config.security.jwt.JwtAuthenticationFilter;
+import kr.niceto.meetme.config.security.jwt.JwtAuthenticationEntryPoint;
 import kr.niceto.meetme.config.security.jwt.JwtAuthenticationFilter;
 import kr.niceto.meetme.config.security.jwt.JwtUtil;
 import kr.niceto.meetme.config.security.oauth2login.CustomOAuth2UserService;
@@ -25,6 +26,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtUtil jwtUtil;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -51,6 +53,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .userService(customOAuth2UserService)
                     .and()
                 .successHandler(oAuth2SuccessHandler)
+        .and()
+            .exceptionHandling()
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
         .and()
             .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
         ;

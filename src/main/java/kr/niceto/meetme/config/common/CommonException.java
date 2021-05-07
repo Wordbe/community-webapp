@@ -2,9 +2,11 @@ package kr.niceto.meetme.config.common;
 
 import kr.niceto.meetme.config.ApplicationContextProvider;
 import lombok.Builder;
+import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 
 @Builder
+@Getter
 public class CommonException extends RuntimeException {
 
     private String returnCode;

@@ -20,6 +20,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.rmi.server.ExportException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -85,7 +86,8 @@ public class JwtUtil {
 
     public boolean isTokenValid(String jwt, HttpServletResponse response) throws IOException {
         if (StringUtils.isBlank(jwt)) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT does not exist.");
+//            throw new IllegalArgumentException("JWT does not exist.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT does not exist.");
             return false;
         }
 
@@ -94,19 +96,26 @@ public class JwtUtil {
             return !claimsJws.getBody().getExpiration().before(new Date());
         } catch (SecurityException e) {
             log.info("Invalid JWT signature.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT signature is invalid.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT signature is invalid.");
+//            throw new SecurityException("JWT signature is invalid.");
         } catch (MalformedJwtException e) {
             log.info("Invalid JWT token.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token is invalid.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token is invalid.");
+//            throw new MalformedJwtException("The token is invalid");
         } catch (ExpiredJwtException e) {
             log.info("Expired JWT token.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token has been expired.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token has been expired.");
+//            throw new ExportException("The token has been expired.");
         } catch (UnsupportedJwtException e) {
             log.info("Unsupported JWT token.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unsupported JWT token.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unsupported JWT token.");
+//            throw new UnsupportedJwtException("Unsupported JWT token.");
         } catch (IllegalArgumentException e) {
             log.info("JWT token compact of handler are invalid.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token compact of handler are invalid.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token compact of handler are invalid.");
+//            throw new IllegalArgumentException("JWT token compact of handler are invalid.");
+        } catch (SignatureException e) {
+            log.info("JWT signature does not match locally computed signature. JWT validity cannot be asserted and should not be trusted.");
         }
         return false;
     }
