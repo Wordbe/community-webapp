@@ -87,7 +87,6 @@ public class JwtUtil {
     public boolean isTokenValid(String jwt, HttpServletResponse response) throws IOException {
         if (StringUtils.isBlank(jwt)) {
 //            throw new IllegalArgumentException("JWT does not exist.");
-//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT does not exist.");
             return false;
         }
 
@@ -105,7 +104,7 @@ public class JwtUtil {
         } catch (ExpiredJwtException e) {
             log.info("Expired JWT token.");
 //            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token has been expired.");
-//            throw new ExportException("The token has been expired.");
+//            throw new ExpiredJwtException(null, null, "The token has been expired.");
         } catch (UnsupportedJwtException e) {
             log.info("Unsupported JWT token.");
 //            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unsupported JWT token.");
@@ -121,7 +120,13 @@ public class JwtUtil {
     }
 
     public Authentication getAuthentication(String jwt) {
-        Jws<Claims> claims = getClaims(jwt);
+        Jws<Claims> claims;
+        try {
+            claims = getClaims(jwt);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         List<String> roles = (List<String>) claims.getBody().get("roles");
         Collection<? extends GrantedAuthority> authorities = roles.stream()
                 .map(SimpleGrantedAuthority::new)

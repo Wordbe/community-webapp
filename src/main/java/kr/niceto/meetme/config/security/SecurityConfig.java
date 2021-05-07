@@ -31,11 +31,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+            .exceptionHandling()
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+        .and()
             .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
             .authorizeRequests()
-                .antMatchers("/", "/login", "/signup", "/api/v1/**").permitAll()
+                .antMatchers("/", "/login", "/signup").permitAll()
                 .anyRequest().authenticated()
 //        .and()
 //            .httpBasic()
@@ -53,9 +56,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .userService(customOAuth2UserService)
                     .and()
                 .successHandler(oAuth2SuccessHandler)
-        .and()
-            .exceptionHandling()
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
         .and()
             .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
         ;

@@ -34,11 +34,11 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
         String registrationId = userRequest.getClientRegistration()
-                                .getRegistrationId();
+                .getRegistrationId();
         String userNameAttributeName = userRequest.getClientRegistration()
-                                .getProviderDetails()
-                                .getUserInfoEndpoint()
-                                .getUserNameAttributeName();
+                .getProviderDetails()
+                .getUserInfoEndpoint()
+                .getUserNameAttributeName();
 
         OAuth2AccountAttributes attributes = OAuth2AccountAttributes.of(registrationId,
                 userNameAttributeName,
