@@ -43,7 +43,7 @@ public class ApiControllerAdvice {
         CommonResponse response = CommonResponse.builder()
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .code(messageCode)
-                .message(messageSource.getMessage(messageCode))
+                .message(messageSource.getMessage(messageCode) + " | " + ex.getMessage())
                 .build();
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
