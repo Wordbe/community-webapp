@@ -1,10 +1,16 @@
 package kr.niceto.meetme.config.security.formLogin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import kr.niceto.meetme.config.common.CommonResponse;
 import kr.niceto.meetme.config.security.jwt.JwtUtil;
 import kr.niceto.meetme.domain.accounts.Account;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -30,13 +36,23 @@ public class FormSuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         LocalDateTime issuedAt = LocalDateTime.now();
-        String jwt = createJwt(authentication, issuedAt);
+        String accessToken = createJwt(authentication, issuedAt, true);
+        String refreshToken = createJwt(authentication, issuedAt, false);
 
-        jwtUtil.setResponseHeader(response, issuedAt, jwt);
-        sendRedirect(request, response);
+        setResponseHeader(response, issuedAt, accessToken, refreshToken);
+        setResponseBody(response);
     }
 
-    private String createJwt(Authentication authentication, LocalDateTime issuedAt) {
+    private void setResponseHeader(HttpServletResponse response, LocalDateTime issuedAt,
+                                   String accessToken, String refreshToken) {
+        jwtUtil.setResponseHeader(response, issuedAt, accessToken, refreshToken);
+    }
+
+    private void setResponseBody(HttpServletResponse response) throws IOException {
+        CommonResponse.setOkResponse(response);
+    }
+
+    private String createJwt(Authentication authentication, LocalDateTime issuedAt, boolean isAccessToken) {
         Account principal = (Account) authentication.getPrincipal();
 
         String username = principal.getUsername();
@@ -44,19 +60,9 @@ public class FormSuccessHandler implements AuthenticationSuccessHandler {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        return jwtUtil.createToken(username, roles, issuedAt);
-    }
-
-    private void sendRedirect(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        RequestCache requestCache = new HttpSessionRequestCache();
-        RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
-
-        SavedRequest savedRequest = requestCache.getRequest(request, response);
-        if (savedRequest != null) {
-            String redirectUrl = savedRequest.getRedirectUrl();
-            redirectStrategy.sendRedirect(request, response, redirectUrl);
-        } else {
-            redirectStrategy.sendRedirect(request, response, "/");
-        }
+        if (isAccessToken)
+            return jwtUtil.createAccessToken(username, null, roles, issuedAt);
+        else
+            return jwtUtil.createRefreshToken(username, null, roles, issuedAt);
     }
 }

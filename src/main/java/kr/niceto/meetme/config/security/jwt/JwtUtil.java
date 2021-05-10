@@ -20,9 +20,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.rmi.server.ExportException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -32,39 +32,57 @@ import java.util.stream.Collectors;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.token-valid-minutes}")
-    private int TOKEN_VALID_MINUTES;
+    @Value("${jwt.access-token-secret-key}")
+    private String ACCESS_TOKEN_SECRET_KEY;
 
-    @Value("${jwt.secret}")
-    private String SECRET_KEY;
+    @Value("${jwt.refresh-token-secret-key}")
+    private String REFRESH_TOKEN_SECRET_KEY;
 
-    @Value("${jwt.token-key-name}")
-    private String TOKEN_KEY_NAME;
+    @Value("${jwt.access-token-valid-minutes}")
+    private int ACCESS_TOKEN_VALID_MINUTES;
 
-    private SecretKey secretKey;
+    @Value("${jwt.access-token-header-name}")
+    private String ACCESS_TOKEN_HEADER_NAME;
+
+    @Value("${jwt.refresh-token-valid-days}")
+    private int REFRESH_TOKEN_VALID_DAYS;
+
+    private SecretKey accessTokenSecretKey;
+    private SecretKey refreshTokenSecretKey;
 
     @PostConstruct
     protected void init() {
-        byte[] decodedSecretKey = Decoders.BASE64.decode(SECRET_KEY);
-        this.secretKey = Keys.hmacShaKeyFor(decodedSecretKey);
+        byte[] accessTokenSecretKey = Decoders.BASE64.decode(ACCESS_TOKEN_SECRET_KEY);
+        byte[] refreshTokenSecretKey = Decoders.BASE64.decode(REFRESH_TOKEN_SECRET_KEY);
+        this.accessTokenSecretKey = Keys.hmacShaKeyFor(accessTokenSecretKey);
+        this.refreshTokenSecretKey = Keys.hmacShaKeyFor(refreshTokenSecretKey);
     }
 
     public String createToken(String username, List<String> roles, LocalDateTime issuedAt) {
-        return createToken(username, null, roles, issuedAt);
+        return createAccessToken(username, null, roles, issuedAt);
     }
 
-    public String createToken(String username, String provider, List<String> roles, LocalDateTime issuedAt) {
+    public String createAccessToken(String username, String provider, List<String> roles, LocalDateTime issuedAt) {
+        return createToken(username, provider, roles,
+                            issuedAt, issuedAt.plusMinutes(ACCESS_TOKEN_VALID_MINUTES), accessTokenSecretKey);
+    }
+
+    public String createRefreshToken(String username, String provider, List<String> roles, LocalDateTime issuedAt) {
+        return createToken(username, provider, roles,
+                issuedAt, issuedAt.plusDays(REFRESH_TOKEN_VALID_DAYS), refreshTokenSecretKey);
+    }
+
+    public String createToken(String username, String provider, List<String> roles,
+                              LocalDateTime issuedAt, LocalDateTime expiredAt, SecretKey secretKey) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put("roles", roles);
-        if (!StringUtils.isBlank(provider)) {
-            claims.put("provider", provider);
-        }
+        claims.put("provider", provider);
 
         return Jwts.builder()
                 .setHeaderParam("typ", Header.JWT_TYPE)
                 .setClaims(claims)
                 .setIssuedAt(localDateTime2Date(issuedAt))
-                .setExpiration(localDateTime2Date(issuedAt.plusMinutes(TOKEN_VALID_MINUTES)))
+                .setExpiration(localDateTime2Date(expiredAt))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -84,7 +102,52 @@ public class JwtUtil {
         return "";
     }
 
-    public boolean isTokenValid(String jwt, HttpServletResponse response) throws IOException {
+    public String resolveRefreshToken(HttpServletRequest request) {
+        List<String> cookies = Arrays.stream(request.getCookies())
+                .filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .collect(Collectors.toList());
+        String refreshToken = cookies.get(0);
+
+        return refreshToken;
+    }
+
+    public boolean isRefreshTokenValid(String jwt) {
+        if (StringUtils.isBlank(jwt)) {
+//            throw new IllegalArgumentException("JWT does not exist.");
+            return false;
+        }
+
+        try {
+            Jws<Claims> claimsJws = getRefreshTokenClaims(jwt);
+            return !claimsJws.getBody().getExpiration().before(new Date());
+        } catch (SecurityException e) {
+            log.info("Invalid JWT signature.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT signature is invalid.");
+//            throw new SecurityException("JWT signature is invalid.");
+        } catch (MalformedJwtException e) {
+            log.info("Invalid JWT token.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token is invalid.");
+//            throw new MalformedJwtException("The token is invalid");
+        } catch (ExpiredJwtException e) {
+            log.info("Expired JWT token.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token has been expired.");
+//            throw new ExpiredJwtException(null, null, "The token has been expired.");
+        } catch (UnsupportedJwtException e) {
+            log.info("Unsupported JWT token.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unsupported JWT token.");
+//            throw new UnsupportedJwtException("Unsupported JWT token.");
+        } catch (IllegalArgumentException e) {
+            log.info("JWT token compact of handler are invalid.");
+//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token compact of handler are invalid.");
+//            throw new IllegalArgumentException("JWT token compact of handler are invalid.");
+        } catch (SignatureException e) {
+            log.info("JWT signature does not match locally computed signature. JWT validity cannot be asserted and should not be trusted.");
+        }
+        return false;
+    }
+
+    public boolean isTokenValid(String jwt) {
         if (StringUtils.isBlank(jwt)) {
 //            throw new IllegalArgumentException("JWT does not exist.");
             return false;
@@ -120,12 +183,7 @@ public class JwtUtil {
     }
 
     public Authentication getAuthentication(String jwt) {
-        Jws<Claims> claims;
-        try {
-            claims = getClaims(jwt);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Jws<Claims> claims = getClaims(jwt);
 
         List<String> roles = (List<String>) claims.getBody().get("roles");
         Collection<? extends GrantedAuthority> authorities = roles.stream()
@@ -136,22 +194,46 @@ public class JwtUtil {
         return new UsernamePasswordAuthenticationToken(principal, jwt, authorities);
     }
 
-    public Jws<Claims> getClaims(String jwt) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(jwt);
+    public Jws<Claims> getRefreshTokenClaims(String jwt) {
+        return getClaims(jwt, refreshTokenSecretKey);
     }
 
-    public void setResponseHeader(HttpServletResponse response, LocalDateTime issuedAt, String jwt) {
-        Cookie cookie = new Cookie("refreshToken", jwt);
+    public Jws<Claims> getClaims(String jwt) {
+        return getClaims(jwt, accessTokenSecretKey);
+    }
+
+    public Jws<Claims> getClaims(String jwt, SecretKey secretKey) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(jwt);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void setResponseHeader(HttpServletResponse response, LocalDateTime issuedAt,
+                                  String accessToken, String refreshToken) {
+        Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true);
 //        cookie.setPath("/");
 //        cookie.setSecure(true); // https
 
         response.addCookie(cookie);
         response.setStatus(HttpStatus.OK.value());
-        response.addHeader(TOKEN_KEY_NAME, jwt);
-        response.addHeader("X-Token-Expires-In", String.valueOf(issuedAt.plusMinutes(TOKEN_VALID_MINUTES)));
+        response.addHeader(ACCESS_TOKEN_HEADER_NAME, accessToken);
+        response.addHeader("X-Token-Expires-In", String.valueOf(issuedAt.plusMinutes(ACCESS_TOKEN_VALID_MINUTES)));
+    }
+
+    public String updateToken(String jwt, LocalDateTime issuedAt) {
+        Jws<Claims> jwsClaims = getClaims(jwt);
+        Claims claims = jwsClaims.getBody();
+
+        String username = claims.getSubject();
+        List<String> roles = (List<String>) claims.get("roles");
+        String provider = (String) claims.get("provider");
+
+        return createAccessToken(username, provider, roles, issuedAt);
     }
 }

@@ -41,7 +41,7 @@ public class ApiControllerAdvice {
 
         String messageCode = "MSE0001";
         CommonResponse response = CommonResponse.builder()
-                .status(HttpStatus.UNAUTHORIZED.value())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .code(messageCode)
                 .message(messageSource.getMessage(messageCode) + " | " + ex.getMessage())
                 .build();

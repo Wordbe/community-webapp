@@ -31,14 +31,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-            .exceptionHandling()
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-        .and()
+//            .exceptionHandling()
+//                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+//        .and()
             .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
             .authorizeRequests()
-                .antMatchers("/", "/login", "/signup").permitAll()
                 .anyRequest().authenticated()
 //        .and()
 //            .httpBasic()
@@ -56,14 +55,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .userService(customOAuth2UserService)
                     .and()
                 .successHandler(oAuth2SuccessHandler)
-        .and()
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+//        .and()
+//            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
         ;
     }
 
     @Override
     public void configure(WebSecurity web) {
-        // /css/**, /images/**, /js/** 등 정적 리소스는 보안필터를 거치지 않게 한다.
-        web.ignoring().requestMatchers(PathRequest.toStaticResources().atCommonLocations());
+        web.ignoring()
+            // /css/**, /images/**, /js/** 등 정적 리소스는 보안필터를 거치지 않게 한다.
+            .requestMatchers(PathRequest.toStaticResources().atCommonLocations())
+            .antMatchers("/", "/login", "/signup",
+                        "/api/v1/token/updateAccessToken");
     }
 }

@@ -30,30 +30,23 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         LocalDateTime issuedAt = LocalDateTime.now();
-        String jwt = createJwt(authentication, issuedAt);
+        String accessToken = createJwt(authentication, issuedAt, true);
+        String refreshToken = createJwt(authentication, issuedAt, false);
 
-        setResponseHeader(response, issuedAt, jwt);
+        setResponseHeader(response, issuedAt, accessToken, refreshToken);
         setResponseBody(response);
     }
 
-    private void setResponseHeader(HttpServletResponse response, LocalDateTime issuedAt, String jwt) {
-        jwtUtil.setResponseHeader(response, issuedAt, jwt);
+    private void setResponseHeader(HttpServletResponse response, LocalDateTime issuedAt,
+                                   String accessToken, String refreshToken) {
+        jwtUtil.setResponseHeader(response, issuedAt, accessToken, refreshToken);
     }
 
     private void setResponseBody(HttpServletResponse response) throws IOException {
-        CommonResponse successResponse = CommonResponse.builder()
-                .status(HttpStatus.OK.value())
-                .code(HttpStatus.OK.name())
-                .message(HttpStatus.OK.getReasonPhrase())
-                .build();
-        ObjectWriter objectWriter = new ObjectMapper().writer().withDefaultPrettyPrinter();
-        String json = objectWriter.writeValueAsString(successResponse);
-
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().append(json);
+        CommonResponse.setOkResponse(response);
     }
 
-    private String createJwt(Authentication authentication, LocalDateTime issuedAt) {
+    private String createJwt(Authentication authentication, LocalDateTime issuedAt, boolean isAccessToken) {
         DefaultOAuth2User principal = (DefaultOAuth2User) authentication.getPrincipal();
 
         String email = (String) principal.getAttributes().get("email");
@@ -62,6 +55,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .collect(Collectors.toList());
         String provider = ((OAuth2AuthenticationToken) authentication).getAuthorizedClientRegistrationId();
 
-        return jwtUtil.createToken(email, provider, roles, issuedAt);
+        if (isAccessToken)
+            return jwtUtil.createAccessToken(email, provider, roles, issuedAt);
+        else
+            return jwtUtil.createRefreshToken(email, provider, roles, issuedAt);
     }
 }
