@@ -4,6 +4,7 @@ import com.nimbusds.oauth2.sdk.util.StringUtils;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import kr.niceto.meetme.web.dto.TokenRecreateDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,6 @@ import javax.crypto.SecretKey;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -112,9 +112,8 @@ public class JwtUtil {
         return refreshToken;
     }
 
-    public boolean isRefreshTokenValid(String jwt) {
+    public boolean isRefreshTokenValid(String jwt, HttpServletRequest request) {
         if (StringUtils.isBlank(jwt)) {
-//            throw new IllegalArgumentException("JWT does not exist.");
             return false;
         }
 
@@ -123,24 +122,16 @@ public class JwtUtil {
             return !claimsJws.getBody().getExpiration().before(new Date());
         } catch (SecurityException e) {
             log.info("Invalid JWT signature.");
-//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT signature is invalid.");
-//            throw new SecurityException("JWT signature is invalid.");
         } catch (MalformedJwtException e) {
             log.info("Invalid JWT token.");
-//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token is invalid.");
-//            throw new MalformedJwtException("The token is invalid");
         } catch (ExpiredJwtException e) {
             log.info("Expired JWT token.");
-//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The token has been expired.");
-//            throw new ExpiredJwtException(null, null, "The token has been expired.");
+            // TODO: DB에서 refreshToken 삭제
+            request.setAttribute("exception", e);
         } catch (UnsupportedJwtException e) {
             log.info("Unsupported JWT token.");
-//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unsupported JWT token.");
-//            throw new UnsupportedJwtException("Unsupported JWT token.");
         } catch (IllegalArgumentException e) {
             log.info("JWT token compact of handler are invalid.");
-//            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token compact of handler are invalid.");
-//            throw new IllegalArgumentException("JWT token compact of handler are invalid.");
         } catch (SignatureException e) {
             log.info("JWT signature does not match locally computed signature. JWT validity cannot be asserted and should not be trusted.");
         }
@@ -226,14 +217,12 @@ public class JwtUtil {
         response.addHeader("X-Token-Expires-In", String.valueOf(issuedAt.plusMinutes(ACCESS_TOKEN_VALID_MINUTES)));
     }
 
-    public String updateToken(String jwt, LocalDateTime issuedAt) {
-        Jws<Claims> jwsClaims = getClaims(jwt);
-        Claims claims = jwsClaims.getBody();
+    public String recreateAccessToken(TokenRecreateDto tokenRecreateDto, LocalDateTime issuedAt) {
+        List<String> roles = List.of(tokenRecreateDto.getRole().name());
 
-        String username = claims.getSubject();
-        List<String> roles = (List<String>) claims.get("roles");
-        String provider = (String) claims.get("provider");
-
-        return createAccessToken(username, provider, roles, issuedAt);
+        return createAccessToken(tokenRecreateDto.getAccount(),
+                                tokenRecreateDto.getProvider(),
+                                roles,
+                                issuedAt);
     }
 }

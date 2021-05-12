@@ -18,12 +18,12 @@ public class OAuth2AccountAttributes {
 
     @Builder
     public OAuth2AccountAttributes(Map<String, Object> attributes, String nameAttributeKey, String name, String email, String provider, String picture) {
-        this.attributes = attributes;
-        this.nameAttributeKey = nameAttributeKey;
         this.name = name;
         this.email = email;
         this.provider = provider;
         this.picture = picture;
+        this.attributes = attributes;
+        this.nameAttributeKey = nameAttributeKey;
     }
 
     public static OAuth2AccountAttributes of(String registrationId,
