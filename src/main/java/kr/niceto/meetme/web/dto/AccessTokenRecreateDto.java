@@ -12,7 +12,7 @@ import javax.persistence.Enumerated;
 
 @Getter @Setter
 @NoArgsConstructor
-public class TokenRecreateDto {
+public class AccessTokenRecreateDto {
 
     private String account;
     private String provider;
@@ -21,17 +21,9 @@ public class TokenRecreateDto {
     private AccountRole role;
 
     @Builder
-    public TokenRecreateDto(String account, String provider, AccountRole role) {
+    public AccessTokenRecreateDto(String account, String provider, AccountRole role) {
         this.account = account;
         this.provider = provider;
         this.role = role;
-    }
-
-    public Token toEntity() {
-        return Token.builder()
-                .account(account)
-                .provider(provider)
-                .role(role)
-                .build();
     }
 }

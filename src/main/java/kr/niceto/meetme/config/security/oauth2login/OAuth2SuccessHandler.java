@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import kr.niceto.meetme.config.security.jwt.JwtUtil;
 import kr.niceto.meetme.config.common.CommonResponse;
+import kr.niceto.meetme.domain.token.TokenRepository;
+import kr.niceto.meetme.service.TokenService;
+import kr.niceto.meetme.web.dto.RefreshTokenSaveDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
+    private final TokenService tokenService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -57,7 +61,20 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         if (isAccessToken)
             return jwtUtil.createAccessToken(email, provider, roles, issuedAt);
-        else
-            return jwtUtil.createRefreshToken(email, provider, roles, issuedAt);
+        else {
+            String refreshToken = jwtUtil.createRefreshToken(email, provider, roles, issuedAt);
+            saveRefreshToken(refreshToken, email, provider);
+
+            return refreshToken;
+        }
+    }
+
+    private void saveRefreshToken(String refreshToken, String email, String provider) {
+        RefreshTokenSaveDto refreshTokenSaveDto = RefreshTokenSaveDto.builder()
+                .tokenValue(refreshToken)
+                .account(email)
+                .provider(provider)
+                .build();
+        tokenService.saveRefreshToken(refreshTokenSaveDto);
     }
 }

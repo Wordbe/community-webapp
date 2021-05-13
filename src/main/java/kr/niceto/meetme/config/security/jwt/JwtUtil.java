@@ -4,7 +4,7 @@ import com.nimbusds.oauth2.sdk.util.StringUtils;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import kr.niceto.meetme.web.dto.TokenRecreateDto;
+import kr.niceto.meetme.web.dto.AccessTokenRecreateDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -217,11 +217,11 @@ public class JwtUtil {
         response.addHeader("X-Token-Expires-In", String.valueOf(issuedAt.plusMinutes(ACCESS_TOKEN_VALID_MINUTES)));
     }
 
-    public String recreateAccessToken(TokenRecreateDto tokenRecreateDto, LocalDateTime issuedAt) {
-        List<String> roles = List.of(tokenRecreateDto.getRole().name());
+    public String recreateAccessToken(AccessTokenRecreateDto accessTokenRecreateDto, LocalDateTime issuedAt) {
+        List<String> roles = List.of(accessTokenRecreateDto.getRole().name());
 
-        return createAccessToken(tokenRecreateDto.getAccount(),
-                                tokenRecreateDto.getProvider(),
+        return createAccessToken(accessTokenRecreateDto.getAccount(),
+                                accessTokenRecreateDto.getProvider(),
                                 roles,
                                 issuedAt);
     }
